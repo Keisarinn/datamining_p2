@@ -11,6 +11,7 @@ b=np.random.uniform(0,2*np.pi,size=mDim)
 gamma = 1
 epsilon = 0.000001
 lam = 1
+kk = 20
 def transform(x_original):
     global w1
     global b
@@ -27,6 +28,7 @@ def transform(x_original):
 def mapper(key, value):
     global lam
     global epsilon
+    global kk
     start = time.clock()
     # key: None
     # value: one line of input file
@@ -50,7 +52,7 @@ def mapper(key, value):
 	else:
 	    values = np.vstack((values, features))
     #print values.shape
-    print 'Permuting...'
+    #print 'Permuting...'
     #values = np.random.permutation(values)
     
     y = values[:, 0]
@@ -62,19 +64,20 @@ def mapper(key, value):
     x = transform(kaki)
     #print x[0, 0:10]
     randindex = np.random.permutation(np.shape(x)[0])
-    for i in range(k):
-        randindex = np.concatenate((randindex,np.random.permutation(np.shape(x)[0]),axis=0)
+    for i in range(kk):
+        randindex = np.concatenate((randindex,np.random.permutation(np.shape(x)[0])),axis=0)
     print 'Fitting...'
-    for j in xrange(0, 75):
+    for j in xrange(0, kk):
 		for i in xrange(x.shape[0]):
 		    counter = counter + 1.0
-		    L = np.dot(weights,x[counter-1])
+                    rand = randindex[counter-1]
+		    L = np.dot(weights,x[rand])
 		    if (y[i]*L) <=0:
-		        m = beta_1 * m - (1.0 - beta_1)*y[i]*x[counter-1]
-		        v = beta_2 * v + (1.0 - beta_2)*(np.multiply(x[counter-1],x[counter-1]))
+		        m = beta_1 * m - (1.0 - beta_1)*y[rand]*x[rand]
+		        v = beta_2 * v + (1.0 - beta_2)*(np.multiply(x[rand],x[rand]))
                     elif (y[i]*L > 0) and (y[i]*L < 1):
-                        m = beta_1 * m - (1.0 - beta_1)*y[i]*(1-L)*x[counter-1]
-		        v = beta_2 * v + (1.0 - beta_2)*(1-L)*(1-L)*(np.multiply(x[counter-1],x[i]))
+                        m = beta_1 * m - (1.0 - beta_1)*y[rand]*(1-L)*x[rand]
+		        v = beta_2 * v + (1.0 - beta_2)*(1-L)*(1-L)*(np.multiply(x[rand],x[rand]))
 		    else:
 		    	m = beta_1 * m
 		    	v = beta_2 * v
@@ -89,11 +92,12 @@ def mapper(key, value):
 def reducer(key, values):
     # key: key from mapper used to aggregate
     # values: list of all value for that key
-    
+    start = time.clock()
     weights_final = 0.0
     num_weights = 0.0
     for i in values:
         weights_final = weights_final + i
         num_weights = num_weights + 1.0
     #print num_weights
+    print 'Time elapsed for reducer: ', time.clock()-start                              
     yield weights_final/num_weights
